@@ -6,7 +6,7 @@
 
 // Data
 const account1 = {
-  owner: 'Jonas Schmedtmann',
+  owner: 'EunJe Kim',
   movements: [200, 450, -400, 3000, -650, -130, 70, 1300],
   interestRate: 1.2, // %
   pin: 1111,
@@ -64,51 +64,65 @@ const inputLoanAmount = document.querySelector('.form__input--loan-amount');
 const inputCloseUsername = document.querySelector('.form__input--user');
 const inputClosePin = document.querySelector('.form__input--pin');
 
-const displayMovements = (acc, sort) => {
+//UserName
+const createUsername = accs => {
+  accs.forEach(acc => {
+    acc.userName = acc.owner
+      .toLowerCase()
+      .split(' ')
+      .map(name => name[0])
+      .join('');
+  });
+};
+createUsername(accounts);
+
+const displayMovements = (acc, sorted) => {
   containerMovements.innerHTML = '';
-  const movs = sort
+
+  const movs = sorted
     ? acc.movements.slice().sort((a, b) => a - b)
     : acc.movements;
-  movs.forEach(function (mov, i) {
+  movs.forEach((mov, i) => {
     const type = mov > 0 ? 'deposit' : 'withdrawal';
     const html = `<div class="movements__row">
-   <div class="movements__type movements__type--${type}">${i + 1} ${type}</div>
-   <div class="movements__date">3 days ago</div>
-   <div class="movements__value">${mov}€</div>
-  </div>
-   `;
+    <div class="movements__type movements__type--${type}">${i + 1} ${type}</div>
+    <div class="movements__date">3 days ago</div>
+    <div class="movements__value">${mov}€</div>
+  </div>`;
+
     containerMovements.insertAdjacentHTML('afterbegin', html);
   });
 };
 
-const calcDisplayBalance = acc => {
-  acc.balance = acc.movements.reduce((acc, mov) => acc + mov, 0);
+const calcBalance = acc => {
+  acc.balance = acc.movements.reduce((acc, cur) => acc + cur, 0);
   labelBalance.textContent = `${acc.balance}€`;
 };
 
-const calcDisplaySummary = acc => {
-  const income = acc.movements
+const displaySummary = acc => {
+  const incomes = acc.movements
     .filter(mov => mov > 0)
     .reduce((acc, cur) => acc + cur, 0);
-  labelSumIn.textContent = `${income}€`;
+  labelSumIn.textContent = `${incomes}€`;
 
-  const outcome = acc.movements
+  const outcomes = acc.movements
     .filter(mov => mov < 0)
     .reduce((acc, cur) => acc + cur, 0);
-  labelSumOut.textContent = `${Math.abs(outcome)}€`;
+  labelSumOut.textContent = `${Math.abs(outcomes)}€`;
 
   const interest = acc.movements
     .filter(mov => mov > 0)
-    .map(int => (int * acc.interestRate) / 100)
-    .filter(int => int >= 1)
-    .reduce((acc, cur) => acc + cur);
+    .map(deposit => (deposit * acc.interestRate) / 100)
+    .filter(interest => interest >= 1)
+    .reduce((acc, interest) => acc + interest, 0);
   labelSumInterest.textContent = `${interest}€`;
+  console.log('interest', interest);
 };
 
-const updateUI = acc => {
+const UpdateUI = acc => {
   displayMovements(acc);
-  calcDisplayBalance(acc);
-  calcDisplaySummary(acc);
+  calcBalance(acc);
+  displaySummary(acc);
 };
 
 let currentUser;
@@ -117,87 +131,31 @@ const handleLogin = e => {
   e.preventDefault();
   currentUser = accounts.find(acc => acc.userName === inputLoginUsername.value);
   console.log('currentUser', currentUser);
-  if (currentUser && currentUser.pin === Number(inputLoginPin.value)) {
-    labelWelcome.textContent = `welocme back, ${
+  if (currentUser?.pin === Number(inputLoginPin.value)) {
+    labelWelcome.textContent = `Wecome back, ${
       currentUser.owner.split(' ')[0]
     }`;
     containerApp.style.opacity = 100;
+
+    //Update ui
+    UpdateUI(currentUser);
+
+    //Clear username & password
     inputLoginUsername.value = inputLoginPin.value = '';
     inputLoginPin.blur();
-
-    updateUI(currentUser);
   }
 };
+////Event Handlers
+btnLogin.addEventListener('click', handleLogin);
 
 let sorted = false;
-const handleSort = e => {
+const handleSorted = e => {
   e.preventDefault();
   displayMovements(currentUser, !sorted);
   sorted = !sorted;
 };
-
-btnSort.addEventListener('click', handleSort);
-
-const handleTransfer = e => {
-  e.preventDefault();
-  const tranferMoney = Number(inputTransferAmount.value);
-  const tranferReciever = accounts.find(
-    acc => acc.userName === inputTransferTo.value
-  );
-  inputTransferTo.value = inputTransferAmount.value = '';
-  inputTransferAmount.blur();
-  if (
-    tranferReciever &&
-    currentUser.balance >= tranferMoney &&
-    tranferMoney > 0 &&
-    tranferReciever !== currentUser
-  ) {
-    tranferReciever.movements.push(tranferMoney);
-    currentUser.movements.push(-tranferMoney);
-    updateUI(currentUser);
-  }
-};
-
-btnTransfer.addEventListener('click', handleTransfer);
-
-btnLogin.addEventListener('click', handleLogin);
-
-const handleLoan = e => {
-  e.preventDefault();
-  const amount = Number(inputLoanAmount.value);
-  if (
-    currentUser.movements > 0 &&
-    currentUser.movements.some(mov => mov > amount * 0.1)
-  ) {
-    currentUser.movements.push(amount);
-    //Update UI
-    updateUI(currentUser);
-  }
-};
-
-btnLoan.addEventListener('click', handleLoan);
-
-const handleClose = e => {
-  e.preventDefault();
-
-  if (
-    currentUser.userName === inputCloseUsername.value &&
-    currentUser.pin === Number(inputClosePin.value)
-  ) {
-    const index = accounts.findIndex(
-      acc => acc.userName === inputCloseUsername.value
-    );
-    console.log(index);
-    //Delete Account
-    accounts.splice(index, 1);
-    //Hide UI
-    containerApp.style.opacity = 0;
-  }
-  inputCloseUsername.value = inputClosePin.value = '';
-  inputClosePin.blur();
-};
-
-btnClose.addEventListener('click', handleClose);
+////Event Handlers
+btnSort.addEventListener('click', handleSorted);
 
 ///////Computing name
 // const createUsername = accs => {
@@ -213,24 +171,14 @@ btnClose.addEventListener('click', handleClose);
 
 //////Filter Deposit, Withdrawal
 
-const deposit = accs => accs.map(acc => acc.movements.filter(mov => mov > 0));
-const withdrawal = accs =>
-  accs.map(acc => acc.movements.filter(mov => mov < 0));
-console.log('deposit', deposit(accounts));
-console.log('withdrawal', withdrawal(accounts));
+// const deposit = accs => accs.map(acc => acc.movements.filter(mov => mov > 0));
+// const withdrawal = accs =>
+//   accs.map(acc => acc.movements.filter(mov => mov < 0));
+// console.log('deposit', deposit(accounts));
+// console.log('withdrawal', withdrawal(accounts));
 
-const createUsername1 = accs =>
-  accs.map(
-    acc =>
-      (acc.userName = acc.owner
-        .toLowerCase()
-        .split(' ')
-        .map(name => name[0])
-        .join(''))
-  );
+// console.log('userName', createUsername1(accounts));
 
-console.log('userName', createUsername1(accounts));
-console.log('accounts', accounts);
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
 // LECTURES
@@ -263,24 +211,24 @@ const movements = [200, 450, -400, 3000, -650, -130, 70, 1300];
 // };
 // console.log(calcDogsAge(juliaDogs, kateDogs));
 
-const calcDogtoAdultAge = dogAge => {
-  //calculate adult dog age
-  const averageAge = dogAge
-    .map(age => (age <= 2 ? age * 2 : age * 4 + 16))
-    .filter(age => age > 18)
-    .reduce((acc, age, i, arr) => (acc + age) / arr.length, 0);
-  console.log(adultAge);
-  //average dogs adult age
-  // const totalAge = adultAge.reduce((acc, age) => {
-  //   return acc + age;
-  // }, 0);
-  // console.log(totalAge);
-  // const averageAge = totalAge / adultAge.length;
+// const calcDogtoAdultAge = dogAge => {
+//   //calculate adult dog age
+//   const averageAge = dogAge
+//     .map(age => (age <= 2 ? age * 2 : age * 4 + 16))
+//     .filter(age => age > 18)
+//     .reduce((acc, age, i, arr) => (acc + age) / arr.length, 0);
+//   console.log(adultAge);
+//   //average dogs adult age
+//   // const totalAge = adultAge.reduce((acc, age) => {
+//   //   return acc + age;
+//   // }, 0);
+//   // console.log(totalAge);
+//   // const averageAge = totalAge / adultAge.length;
 
-  return averageAge;
-};
-const data = [5, 2, 4, 1, 15, 8, 3];
-const data2 = [4, 3, 2, 13, 23, 3, 12];
-const averageAge1 = calcDogtoAdultAge(data);
-const averageAge2 = calcDogtoAdultAge(data2);
-console.log(calcDogtoAdultAge(averageAge1, averageAge2));
+//   return averageAge;
+// };
+// const data = [5, 2, 4, 1, 15, 8, 3];
+// const data2 = [4, 3, 2, 13, 23, 3, 12];
+// const averageAge1 = calcDogtoAdultAge(data);
+// const averageAge2 = calcDogtoAdultAge(data2);
+// console.log(calcDogtoAdultAge(averageAge1, averageAge2));
