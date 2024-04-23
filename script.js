@@ -157,6 +157,42 @@ const handleSorted = e => {
 ////Event Handlers
 btnSort.addEventListener('click', handleSorted);
 
+btnTransfer.addEventListener('click', function (e) {
+  e.preventDefault();
+  //confirm sender !== receiver
+  // money > 0 && money >= sender.money
+  const receiver = accounts.find(acc => acc.userName === inputTransferTo.value);
+  const transferAmout = Number(inputTransferAmount.value);
+  if (
+    currentUser.userName !== receiver.userName &&
+    receiver &&
+    transferAmout > 0 &&
+    transferAmout >= currentUser.balance
+  ) {
+    // send money to receiver
+    receiver.movements.push(transferAmout);
+    // get rid of money from sender
+    currentUser.movements.push(-transferAmout);
+    // hide money value
+    inputTransferAmount.value = inputTransferTo.value = '';
+    // Update UI
+    updateUI(currentUser);
+  }
+});
+
+btnLoan.addEventListener('click', function (e) {
+  e.preventDefault();
+  //amount money . some(currentuser.mov >= amount money* 0.1)
+  // push money to currentUser
+});
+
+btnClose.addEventListener('click', function (e) {
+  e.preventDefault();
+  // currentUser === input.value && currentUser.pin === input.value
+  // account.splice(1)
+  // hide ui
+});
+
 ///////Computing name
 // const createUsername = accs => {
 //   return accs.map(acc => {
